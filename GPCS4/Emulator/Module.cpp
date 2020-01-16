@@ -322,31 +322,16 @@ bool MemoryMappedModule::isEncodedSymbol(std::string const &symbolName) const
 
 int MemoryMappedModule::initialize()
 {
-	// list of modules, .init_proc() of which lead to crash
-	constexpr std::array<const char*, 1> skipInitModules
-	{
-		"libSceAppContent.sprx",
-	};
-
 	int retVal = 0;
-	do
+
+	if (isModule())
 	{
-		if (skipInitModules.end() != std::find_if(skipInitModules.begin(), skipInitModules.end(), 
-			[this](auto s) -> bool { return std::strcmp(s, fileName.c_str()) == 0; }))
-		{
-			break;
-		}
+		LOG_DEBUG("(%s) .init_proc() start.", fileName.c_str());
+		auto init = reinterpret_cast<init_proc>(m_moduleInfo.pInitProc);
+		retVal = init(0, nullptr, nullptr);
 
-		if (isModule())
-		{
-
-			LOG_DEBUG("(%s) .init_proc() start.", fileName.c_str());
-			auto init = reinterpret_cast<init_proc>(m_moduleInfo.pInitProc);
-			retVal = init(0, nullptr, nullptr);
-
-			LOG_DEBUG("(%s) .init_proc() end. result = 0x%x", fileName.c_str(), retVal);
-		}
-	} while (false);
+		LOG_DEBUG("(%s) .init_proc() end. result = 0x%x", fileName.c_str(), retVal);
+	}
 
 	return retVal;
 }
